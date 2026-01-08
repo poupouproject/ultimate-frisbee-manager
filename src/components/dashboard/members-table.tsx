@@ -110,6 +110,7 @@ export function MembersTable({ clubId }: { clubId: string }) {
             <TableHeader>
               <TableRow>
                 <TableHead>Nom</TableHead>
+                <TableHead className="hidden md:table-cell">Courriel</TableHead>
                 <TableHead className="hidden sm:table-cell">Genre</TableHead>
                 <TableHead className="hidden sm:table-cell">Vitesse</TableHead>
                 <TableHead className="hidden md:table-cell">Lancer</TableHead>
@@ -122,6 +123,9 @@ export function MembersTable({ clubId }: { clubId: string }) {
                 <TableRow key={member.id}>
                   <TableCell>
                     <div className="font-medium">{member.full_name}</div>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
+                    {member.email || "-"}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
                     <Badge variant="outline">{member.gender}</Badge>

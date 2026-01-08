@@ -19,6 +19,7 @@ import { PlusCircle, Loader2 } from "lucide-react";
 export interface Member {
   id: string;
   full_name: string;
+  email?: string | null;
   gender: "M" | "F" | "X";
   speed: number;
   throwing: number;
@@ -46,6 +47,7 @@ export function AddMemberDialog({
   // État du formulaire
   const [formData, setFormData] = useState({
     name: "",
+    email: "",
     gender: "M",
     speed: 5,
     throwing: 5,
@@ -57,6 +59,7 @@ export function AddMemberDialog({
       // Mode MODIFICATION : on remplit les champs
       setFormData({
         name: memberToEdit.full_name,
+        email: "",
         gender: memberToEdit.gender,
         speed: memberToEdit.speed,
         throwing: memberToEdit.throwing,
@@ -65,6 +68,7 @@ export function AddMemberDialog({
       // Mode CRÉATION : on vide les champs
       setFormData({
         name: "",
+        email: "",
         gender: "M",
         speed: 5,
         throwing: 5,
@@ -88,6 +92,7 @@ export function AddMemberDialog({
           .from("members")
           .update({
             full_name: formData.name,
+            email: formData.email || null, // Si vide, on envoie null
             gender: formData.gender,
             speed: formData.speed,
             throwing: formData.throwing,
@@ -148,6 +153,19 @@ export function AddMemberDialog({
                 className="col-span-3"
                 required
                 placeholder="Ex: Jonathan Poulin"
+              />
+            </div>
+
+            {/* COURRIEL */}
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="email" className="text-right">Courriel</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Optionnel"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                className="col-span-3"
               />
             </div>
 
