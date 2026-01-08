@@ -10,22 +10,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { MoreHorizontal, Loader2, PlusCircle, Trash2, Pencil } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Loader2, PlusCircle, Zap, Target, User } from "lucide-react";
 import { AddMemberDialog, Member } from "./add-member-dialog";
+import { Badge } from "@/components/ui/badge";
 
 export function MembersTable({ clubId }: { clubId: string }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // États pour gérer la modale (Dialog)
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [memberToEdit, setMemberToEdit] = useState<Member | null>(null);
 
-  // Charger les membres
   const fetchMembers = useCallback(async () => {
     setIsLoading(true);
     const { data, error } = await supabase
@@ -34,11 +31,8 @@ export function MembersTable({ clubId }: { clubId: string }) {
       .eq('club_id', clubId)
       .order('full_name', { ascending: true });
 
-    if (error) {
-      console.error("Erreur:", error);
-    } else {
-      setMembers((data as any[]) || []);
-    }
+    if (error) console.error("Erreur:", error);
+    else setMembers((data as any[]) || []);
     setIsLoading(false);
   }, [clubId]);
 
@@ -51,30 +45,21 @@ export function MembersTable({ clubId }: { clubId: string }) {
 
   // Ouvrir pour CRÉER
   const handleCreate = () => {
-    setMemberToEdit(null); // On vide la sélection
+    setMemberToEdit(null);
     setIsDialogOpen(true);
   };
 
   // Ouvrir pour MODIFIER
   const handleEdit = (member: Member) => {
-    setMemberToEdit(member); // On remplit avec le membre cliqué
+    setMemberToEdit(member);
     setIsDialogOpen(true);
   };
 
   // Action SUPPRIMER
   const handleDelete = async (id: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer ce joueur ?")) return;
-
-    const { error } = await supabase
-      .from('members')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      alert("Erreur lors de la suppression");
-    } else {
-      fetchMembers(); // On rafraîchit la liste
-    }
+    const { error } = await supabase.from('members').delete().eq('id', id);
+    if (error) alert("Erreur lors de la suppression");
+    else fetchMembers();
   };
 
   return (
@@ -83,83 +68,72 @@ export function MembersTable({ clubId }: { clubId: string }) {
         <div className="grid gap-2">
           <CardTitle>Membres du Club</CardTitle>
           <CardDescription>
-            Gérez vos joueurs et leurs statistiques.
+            Gérez vos joueurs. Cliquez sur un joueur pour modifier.
           </CardDescription>
         </div>
-        
-        {/* Bouton AJOUTER */}
         <Button size="sm" className="ml-auto gap-1" onClick={handleCreate}>
           <PlusCircle className="h-3.5 w-3.5" />
           <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-            Ajouter un joueur
+            Ajouter
           </span>
         </Button>
-
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-0 sm:p-6"> 
+      {/* p-0 sur mobile pour gagner de la place */}
+        
         {isLoading ? (
           <div className="flex justify-center p-8">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
         ) : members.length === 0 ? (
           <div className="text-center p-8 text-muted-foreground">
-            Aucun membre trouvé. Cliquez sur "Ajouter un joueur" pour commencer !
+            Aucun membre trouvé.
           </div>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nom</TableHead>
-                <TableHead className="hidden md:table-cell">Courriel</TableHead>
-                <TableHead className="hidden sm:table-cell">Genre</TableHead>
-                <TableHead className="hidden sm:table-cell">Vitesse</TableHead>
-                <TableHead className="hidden md:table-cell">Lancer</TableHead>
-                <TableHead className="text-right">Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="pl-4">Joueur</TableHead>
+                {/* On cache les colonnes détaillées sur mobile si besoin, ou on simplifie */}
+                <TableHead className="text-right pr-4">Stats</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {members.map((member) => (
-                <TableRow key={member.id}>
-                  <TableCell>
-                    <div className="font-medium">{member.full_name}</div>
+                <TableRow 
+                    key={member.id} 
+                    className="cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => handleEdit(member)} // Clic sur toute la ligne
+                >
+                  <TableCell className="pl-4 py-3">
+                    <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-bold border">
+                            {member.full_name.charAt(0)}
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="font-semibold text-sm leading-none mb-1">{member.full_name}</span>
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                {member.gender === 'M' ? 'Homme' : member.gender === 'F' ? 'Femme' : 'Autre'}
+                                {member.email && <span className="hidden sm:inline">• {member.email}</span>}
+                            </span>
+                        </div>
+                    </div>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
-                    {member.email || "-"}
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    <Badge variant="outline">{member.gender}</Badge>
-                  </TableCell>
-                  <TableCell className="hidden sm:table-cell">
-                    {member.speed}/10
-                  </TableCell>
-                  <TableCell className="hidden md:table-cell">
-                    {member.throwing}/10
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant={member.is_active ? "secondary" : "destructive"}>
-                      {member.is_active ? "Actif" : "Inactif"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {/* Action Modifier */}
-                        <DropdownMenuItem onClick={() => handleEdit(member)}>
-                            <Pencil className="mr-2 h-4 w-4" /> Modifier
-                        </DropdownMenuItem>
-                        {/* Action Supprimer */}
-                        <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(member.id)}>
-                            <Trash2 className="mr-2 h-4 w-4" /> Supprimer
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+
+                  <TableCell className="text-right pr-4 py-3">
+                    <div className="flex items-center justify-end gap-2 sm:gap-4">
+                        {/* VITESSE */}
+                        <div className="flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-1 rounded border border-yellow-100">
+                            <Zap className="h-3.5 w-3.5 fill-yellow-500 text-yellow-600" />
+                            <span className="font-bold text-sm">{member.speed}</span>
+                        </div>
+
+                        {/* LANCER */}
+                        <div className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100">
+                            <Target className="h-3.5 w-3.5 text-blue-600" />
+                            <span className="font-bold text-sm">{member.throwing}</span>
+                        </div>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -175,6 +149,7 @@ export function MembersTable({ clubId }: { clubId: string }) {
         clubId={clubId}
         memberToEdit={memberToEdit}
         onSuccess={fetchMembers}
+        onDelete={handleDelete} 
       />
     </Card>
   );

@@ -65,31 +65,26 @@ export default function DashboardPage() {
           <h2 className="text-3xl font-bold tracking-tight">{club.name}</h2>
         </div>
 
-        {/* 1. On passe l'ID du club aux stats pour avoir les VRAIS chiffres */}
         <StatsCards clubId={club.id} />
 
-        {/* 2. Correction de la Grille : Une seule grille parente */}
         <div className="grid gap-4 md:gap-8 lg:grid-cols-3">
-          {/* Carte Sessions (Prend 2 colonnes sur 3) */}
-          <div className="lg:col-span-2 rounded-xl border bg-card text-card-foreground shadow flex flex-col items-center justify-center p-12 text-center space-y-4">
-            <div className="lg:col-span-2 rounded-xl border bg-card text-card-foreground shadow flex flex-col justify-center">
-              {/* On passe l'ID du club pour qu'il sache quoi afficher */}
-              <DashboardSessions clubId={club.id} />
-            </div>
+          
+          {/* --- MODIFICATION ICI --- */}
+          {/* On enlève le style 'card' du parent. Il devient transparent. */}
+          <div className="lg:col-span-2 h-full"> 
+             <DashboardSessions clubId={club.id} />
           </div>
 
-          {/* Carte Activité (Prend 1 colonne) */}
+          {/* Carte Activité (Elle garde son style car elle est autonome) */}
           <div className="rounded-xl border bg-card text-card-foreground shadow p-6 h-fit">
             <h3 className="font-semibold leading-none tracking-tight mb-4">
               Activité Récente
             </h3>
             <div className="text-sm text-muted-foreground space-y-4">
-              <p>
-                Club créé le {new Date(club.created_at).toLocaleDateString()}.
-              </p>
-              <div className="border-t pt-4">
-                <p className="italic">Aucune session récente.</p>
-              </div>
+               <p>Club créé le {new Date(club.created_at).toLocaleDateString()}.</p>
+               <div className="border-t pt-4">
+                 <p className="italic">Aucune session récente.</p>
+               </div>
             </div>
           </div>
         </div>

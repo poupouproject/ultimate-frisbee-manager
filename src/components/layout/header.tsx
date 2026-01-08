@@ -1,4 +1,4 @@
-"use client"; // Obligatoire car on utilise des hooks (usePathname, useRouter)
+"use client";
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -13,19 +13,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"; 
 
 export function Header() {
   const pathname = usePathname(); // Nous donne l'URL actuelle (ex: "/members")
   const router = useRouter();
 
-  // Fonction pour gérer la déconnexion
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/login"); // Redirection vers le login
   };
 
-  // Petite fonction utilitaire pour savoir si un lien est actif
   const getLinkClass = (path: string) => {
     return pathname === path
       ? "text-foreground transition-colors hover:text-foreground" // Actif (Noir)
@@ -39,12 +37,12 @@ export function Header() {
           <Package2 className="h-6 w-6" />
           <span className="sr-only">Ultimate Manager</span>
         </Link>
-        
+
         {/* Lien Dashboard */}
         <Link href="/dashboard" className={getLinkClass("/dashboard")}>
           Tableau de bord
         </Link>
-        
+
         {/* Lien Membres */}
         <Link href="/members" className={getLinkClass("/members")}>
           Membres
@@ -56,7 +54,7 @@ export function Header() {
         </Link>
       </nav>
 
-      {/* --- MENU MOBILE --- */}
+{/* --- MENU MOBILE --- */}
       <Sheet>
         <SheetTrigger asChild>
           <Button variant="outline" size="icon" className="shrink-0 md:hidden">
@@ -65,6 +63,8 @@ export function Header() {
           </Button>
         </SheetTrigger>
         <SheetContent side="left">
+          <SheetTitle className="sr-only">Menu de navigation</SheetTitle>
+          
           <nav className="grid gap-6 text-lg font-medium">
             <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold">
               <Package2 className="h-6 w-6" />
@@ -100,7 +100,6 @@ export function Header() {
             <DropdownMenuItem>Paramètres</DropdownMenuItem>
             <DropdownMenuItem>Support</DropdownMenuItem>
             <DropdownMenuSeparator />
-            {/* Bouton Déconnexion fonctionnel */}
             <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">
               <LogOut className="mr-2 h-4 w-4"/> Déconnexion
             </DropdownMenuItem>

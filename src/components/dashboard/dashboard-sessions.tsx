@@ -28,18 +28,21 @@ export function DashboardSessions({ clubId }: DashboardSessionsProps) {
       setSessions(data || []);
       setLoading(false);
     }
-
     if (clubId) fetchSessions();
   }, [clubId]);
 
   if (loading) {
-    return <div className="p-12 text-center text-muted-foreground">Chargement...</div>;
+    return (
+        <div className="rounded-xl border bg-card text-card-foreground shadow h-full p-12 text-center text-muted-foreground flex items-center justify-center">
+            Chargement...
+        </div>
+    );
   }
 
-  // --- CAS 1 : AUCUNE SESSION (Design vide centré) ---
+  // --- CAS 1 : AUCUNE SESSION (Design vide) ---
   if (sessions.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 md:p-12 text-center space-y-4 h-full">
+      <div className="rounded-xl border bg-card text-card-foreground shadow h-full flex flex-col items-center justify-center p-8 md:p-12 text-center space-y-4">
         <div className="p-4 bg-slate-100 rounded-full">
           <CalendarDays className="h-10 w-10 text-slate-400" />
         </div>
@@ -59,25 +62,22 @@ export function DashboardSessions({ clubId }: DashboardSessionsProps) {
   const nextSession = sessions[0];
   const hasTeams = nextSession.generated_teams;
 
-  // --- CAS 2 : MODE MATCH (Équipes affichées en grand) ---
+  // --- CAS 2 : MODE MATCH (Plein écran) ---
   if (hasTeams) {
     const dateObj = new Date(nextSession.date);
     
-    // Fonction helper pour afficher une carte d'équipe
     const TeamCard = ({ name, players, colorHeader }: { name: string, players: any[], colorHeader: string }) => (
-      <div className="border rounded-xl overflow-hidden shadow-sm bg-white flex flex-col h-full">
-         {/* En-tête de l'équipe : Couleur foncée + Texte Blanc pour contraste max */}
-         <div className={`px-4 py-3 flex justify-between items-center ${colorHeader} text-white`}>
-            <span className="font-bold text-base truncate">{name}</span>
-            <Badge variant="secondary" className="bg-white/20 text-white border-0 hover:bg-white/30">
+      <div className="border rounded-lg overflow-hidden shadow-sm bg-white flex flex-col h-full">
+         <div className={`px-3 py-2 flex justify-between items-center ${colorHeader} text-white`}>
+            <span className="font-bold text-sm truncate">{name}</span>
+            <span className="text-xs bg-white/20 px-1.5 py-0.5 rounded text-white">
                 {players.length}
-            </Badge>
+            </span>
          </div>
-         {/* Liste des joueurs */}
-         <ul className="p-3 space-y-2 flex-1">
+         <ul className="p-2 space-y-1 flex-1">
             {players.map((p: any) => (
-               <li key={p.id} className="text-sm text-slate-700 flex items-center gap-3 p-1 rounded hover:bg-slate-50">
-                  <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500 border border-slate-200 shrink-0">
+               <li key={p.id} className="text-xs text-slate-700 flex items-center gap-2 p-1 rounded hover:bg-slate-50">
+                  <div className="h-5 w-5 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 border border-slate-200 shrink-0">
                     {p.full_name.charAt(0)}
                   </div>
                   <span className="truncate font-medium">{p.full_name}</span>
@@ -88,41 +88,37 @@ export function DashboardSessions({ clubId }: DashboardSessionsProps) {
     );
 
     return (
-      <div className="flex flex-col h-full w-full">
-         {/* En-tête du Match */}
-         <div className="p-6 border-b bg-slate-50/80">
-             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+      <div className="rounded-xl border bg-card text-card-foreground shadow h-full flex flex-col overflow-hidden">
+         {/* En-tête Pleine Largeur */}
+         <div className="p-6 border-b bg-slate-50/80 flex flex-col justify-between gap-4">
+             <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                 <div>
                    <div className="flex items-center gap-2 mb-2">
-                       <Badge variant="default" className="bg-indigo-600 hover:bg-indigo-700">Prochain Match</Badge>
+                       <Badge variant="default" className="bg-indigo-600 hover:bg-indigo-700">Match en cours</Badge>
                        <span className="text-sm text-slate-500 font-medium capitalize">
                            {dateObj.toLocaleDateString('fr-CA', {weekday: 'long', day: 'numeric', month: 'long'})}
                        </span>
                    </div>
-                   <h3 className="text-2xl md:text-3xl font-bold tracking-tight text-slate-900 leading-tight">
+                   <h3 className="text-2xl font-bold tracking-tight text-slate-900">
                        {nextSession.name}
                    </h3>
+                   <div className="flex items-center gap-3 text-sm text-slate-500 mt-2">
+                        <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5"/> {nextSession.location || "Lieu à définir"}</span>
+                        <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5"/> {dateObj.toLocaleTimeString('fr-CA', {hour:'2-digit', minute:'2-digit'})}</span>
+                   </div>
                 </div>
                 <Link href={`/sessions/${nextSession.id}`}>
-                   <Button variant="outline" className="w-full md:w-auto">
-                       Gérer le match <ArrowRight className="ml-2 h-4 w-4"/>
+                   <Button variant="outline" size="sm">
+                       Gérer <ArrowRight className="ml-2 h-4 w-4"/>
                    </Button>
                 </Link>
              </div>
-             <div className="flex items-center gap-2 text-sm text-slate-600 bg-white w-fit px-3 py-1.5 rounded-full border shadow-sm">
-                 <MapPin className="h-4 w-4 text-indigo-500"/> 
-                 {nextSession.location || "Lieu à définir"}
-                 <span className="text-slate-300">|</span>
-                 <Calendar className="h-4 w-4 text-indigo-500"/>
-                 {dateObj.toLocaleTimeString('fr-CA', {hour:'2-digit', minute:'2-digit'})}
-             </div>
          </div>
 
-         {/* Grille des Équipes */}
+         {/* Contenu Équipes */}
          <div className="p-6 bg-slate-50/30 flex-1">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
                 {Array.isArray(nextSession.generated_teams) ? (
-                    // MODE MIXTE
                     nextSession.generated_teams.map((team: any[], idx: number) => (
                         <TeamCard 
                             key={idx} 
@@ -132,7 +128,6 @@ export function DashboardSessions({ clubId }: DashboardSessionsProps) {
                         />
                     ))
                 ) : (
-                    // MODE SÉPARÉ
                     <>
                        {nextSession.generated_teams.men?.map((team: any[], idx: number) => 
                            <TeamCard key={`m-${idx}`} name={`Hommes ${idx + 1}`} players={team} colorHeader="bg-blue-600" />
@@ -148,10 +143,10 @@ export function DashboardSessions({ clubId }: DashboardSessionsProps) {
     );
   }
 
-  // --- CAS 3 : LISTE STANDARD (Pas encore d'équipes) ---
+  // --- CAS 3 : LISTE STANDARD ---
   return (
-    <div className="w-full h-full p-0 flex flex-col">
-      <div className="p-6 border-b flex items-center justify-between bg-white rounded-t-xl">
+    <div className="rounded-xl border bg-card text-card-foreground shadow h-full flex flex-col overflow-hidden">
+      <div className="p-6 border-b flex items-center justify-between bg-white">
         <h3 className="text-lg font-semibold flex items-center gap-2">
            <CalendarDays className="h-5 w-5 text-indigo-600" />
            Prochaines Sessions
@@ -163,42 +158,41 @@ export function DashboardSessions({ clubId }: DashboardSessionsProps) {
         </Link>
       </div>
 
-      <div className="p-4 space-y-3 bg-slate-50/50 flex-1 rounded-b-xl">
-        {sessions.map((session) => {
-          const dateObj = new Date(session.date);
-          const isToday = new Date().toDateString() === dateObj.toDateString();
+      <div className="p-0 flex-1 bg-slate-50/30">
+        <div className="divide-y">
+            {sessions.map((session) => {
+            const dateObj = new Date(session.date);
+            const isToday = new Date().toDateString() === dateObj.toDateString();
 
-          return (
-            <div 
-                key={session.id} 
-                className="flex items-center justify-between p-4 bg-white border rounded-lg shadow-sm hover:border-indigo-200 transition-colors group"
-            >
-              <div className="flex items-center gap-4">
-                 <div className={`flex flex-col items-center justify-center w-12 h-12 rounded-lg border-2 ${isToday ? "bg-red-50 border-red-100 text-red-600" : "bg-slate-50 border-slate-100 text-slate-600"} group-hover:scale-105 transition-transform`}>
-                    <span className="text-[10px] font-bold uppercase leading-none mb-0.5">{dateObj.toLocaleDateString('fr-CA', { month: 'short' }).replace('.', '')}</span>
-                    <span className="text-lg font-bold leading-none">{dateObj.getDate()}</span>
-                 </div>
-                 <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="font-semibold text-slate-900 truncate">{session.name}</h4>
-                        {isToday && <Badge variant="destructive" className="h-5 text-[10px] px-1.5">AUJOURD'HUI</Badge>}
+            return (
+                <div key={session.id} className="p-4 flex items-center justify-between hover:bg-white transition-colors">
+                <div className="flex items-center gap-4">
+                    <div className={`flex flex-col items-center justify-center w-12 h-12 rounded-lg border ${isToday ? "bg-red-50 border-red-100 text-red-600" : "bg-white border-slate-200 text-slate-600"}`}>
+                        <span className="text-[10px] font-bold uppercase leading-none mb-0.5">{dateObj.toLocaleDateString('fr-CA', { month: 'short' }).replace('.', '')}</span>
+                        <span className="text-lg font-bold leading-none">{dateObj.getDate()}</span>
                     </div>
-                    <div className="text-sm text-muted-foreground flex items-center gap-3 mt-1 truncate">
-                        <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {session.location || "Lieu à définir"}</span>
-                        <span className="hidden sm:inline text-slate-300">|</span>
-                        <span className="hidden sm:flex items-center gap-1">{dateObj.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h4 className="font-semibold text-sm text-slate-900">{session.name}</h4>
+                            {isToday && <Badge variant="destructive" className="h-4 text-[9px] px-1">AUJOURD'HUI</Badge>}
+                        </div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                            <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {session.location || "Lieu à définir"}</span>
+                            <span>•</span>
+                            <span>{dateObj.toLocaleTimeString('fr-CA', { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
                     </div>
-                 </div>
-              </div>
+                </div>
 
-              <Link href={`/sessions/${session.id}`}> 
-                <Button size="sm" variant={isToday ? "default" : "outline"} className="shrink-0 gap-2 ml-2">
-                    <Users className="h-4 w-4" /> <span className="hidden sm:inline">Présences</span>
-                </Button>
-              </Link>
-            </div>
-          );
-        })}
+                <Link href={`/sessions/${session.id}`}> 
+                    <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                        <ArrowRight className="h-4 w-4 text-slate-400" />
+                    </Button>
+                </Link>
+                </div>
+            );
+            })}
+        </div>
       </div>
     </div>
   );

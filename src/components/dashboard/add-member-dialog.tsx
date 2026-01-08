@@ -13,9 +13,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PlusCircle, Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react"; 
 
-// On définit le type ici pour pouvoir l'utiliser
 export interface Member {
   id: string;
   full_name: string;
@@ -27,11 +26,12 @@ export interface Member {
 }
 
 interface AddMemberDialogProps {
-  open: boolean;                 // Est-ce que la fenêtre est ouverte ?
-  onOpenChange: (open: boolean) => void; // Fonction pour fermer la fenêtre
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   clubId: string;
-  memberToEdit?: Member | null;  // Le membre à modifier (optionnel)
+  memberToEdit?: Member | null;
   onSuccess: () => void;
+  onDelete?: (id: string) => void; 
 }
 
 export function AddMemberDialog({ 
@@ -39,7 +39,8 @@ export function AddMemberDialog({
   onOpenChange, 
   clubId, 
   memberToEdit, 
-  onSuccess 
+  onSuccess,
+  onDelete 
 }: AddMemberDialogProps) {
   
   const [loading, setLoading] = useState(false);
@@ -59,7 +60,7 @@ export function AddMemberDialog({
       // Mode MODIFICATION : on remplit les champs
       setFormData({
         name: memberToEdit.full_name,
-        email: "",
+        email: memberToEdit.email || "",
         gender: memberToEdit.gender,
         speed: memberToEdit.speed,
         throwing: memberToEdit.throwing,
@@ -81,49 +82,45 @@ export function AddMemberDialog({
     setLoading(true);
 
     try {
-      // 1. Récupérer l'utilisateur connecté (pour l'assigner comme propriétaire)
-      const { data: { user } } = await supabase.auth.getUser();
+      const payload = {
+        club_id: clubId,
+        full_name: formData.name,
+        email: formData.email || null,
+        gender: formData.gender,
+        speed: formData.speed,
+        throwing: formData.throwing,
+        is_active: true,
+      };
 
-      if (!user) throw new Error("Utilisateur non connecté");
-      
       if (memberToEdit) {
-        // --- LOGIQUE DE MISE À JOUR (UPDATE) ---
         const { error } = await supabase
           .from("members")
-          .update({
-            full_name: formData.name,
-            email: formData.email || null, // Si vide, on envoie null
-            gender: formData.gender,
-            speed: formData.speed,
-            throwing: formData.throwing,
-          })
-          .eq('id', memberToEdit.id); // Important : on vise le bon ID
-
+          .update(payload)
+          .eq('id', memberToEdit.id);
         if (error) throw error;
-
       } else {
-        // --- LOGIQUE DE CRÉATION (INSERT) ---
         const { error } = await supabase
           .from("members")
-          .insert({
-            club_id: clubId,
-            full_name: formData.name,
-            gender: formData.gender,
-            speed: formData.speed,
-            throwing: formData.throwing,
-            is_active: true,
-          });
-
+          .insert(payload);
         if (error) throw error;
       }
 
-      onSuccess(); // Rafraîchir le tableau
-      onOpenChange(false); // Fermer la modale
-
+      onSuccess();
+      onOpenChange(false);
     } catch (error: any) {
       alert("Erreur : " + error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Gestion du clic sur Supprimer
+  const handleDeleteClick = () => {
+    if (memberToEdit && onDelete) {
+        if (confirm("Êtes-vous sûr de vouloir supprimer ce joueur ?")) {
+            onDelete(memberToEdit.id);
+            onOpenChange(false);
+        }
     }
   };
 
@@ -137,7 +134,7 @@ export function AddMemberDialog({
             </DialogTitle>
             <DialogDescription>
               {memberToEdit 
-                ? "Mettez à jour les informations du joueur." 
+                ? "Modifiez les infos ou supprimez le joueur." 
                 : "Créez un nouveau profil de joueur pour votre club."}
             </DialogDescription>
           </DialogHeader>
@@ -152,7 +149,6 @@ export function AddMemberDialog({
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 className="col-span-3"
                 required
-                placeholder="Ex: Jonathan Poulin"
               />
             </div>
 
@@ -184,7 +180,7 @@ export function AddMemberDialog({
               </select>
             </div>
 
-            {/* VITESSE (Slider) */}
+            {/* VITESSE */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Vitesse</Label>
               <div className="col-span-3 flex items-center gap-4">
@@ -200,7 +196,7 @@ export function AddMemberDialog({
               </div>
             </div>
 
-            {/* LANCER (Slider) */}
+            {/* LANCER */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label className="text-right">Lancer</Label>
               <div className="col-span-3 flex items-center gap-4">
@@ -217,10 +213,24 @@ export function AddMemberDialog({
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex flex-row justify-between sm:justify-between items-center w-full gap-2">
+            {/* Bouton SUPPRIMER (Seulement en modification) */}
+            {memberToEdit ? (
+                <Button 
+                    type="button" 
+                    variant="destructive" 
+                    onClick={handleDeleteClick}
+                >
+                    <Trash2 className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Supprimer</span>
+                </Button>
+            ) : (
+                <div /> /* Spacer vide si pas de bouton supprimer */
+            )}
+
             <Button type="submit" disabled={loading}>
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {memberToEdit ? "Mettre à jour" : "Sauvegarder"}
+              {memberToEdit ? "Sauvegarder" : "Créer"}
             </Button>
           </DialogFooter>
         </form>
