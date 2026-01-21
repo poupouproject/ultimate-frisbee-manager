@@ -293,7 +293,7 @@ export default function SessionDetailsPage() {
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label className="invisible hidden sm:block">Action</Label>
+                                <Label className="sm:invisible">Action</Label>
                                 <Button 
                                     className="w-full" 
                                     onClick={handleGenerateTeams} 

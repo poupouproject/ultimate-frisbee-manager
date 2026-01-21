@@ -14,11 +14,17 @@ export interface Player {
   [key: string]: any;
 }
 
+// Constants
+const DEFAULT_SKILL_LEVEL = 5;
+const TOLERANCE_STRICT = 0.05;
+const TOLERANCE_FLEXIBLE = 0.15;
+const TOLERANCE_RANDOM = 1.0;
+
 /**
  * Calculate power score for a player (speed + throwing)
  */
 export function getPowerScore(player: Player): number {
-  return (player.speed || 5) + (player.throwing || 5);
+  return (player.speed || DEFAULT_SKILL_LEVEL) + (player.throwing || DEFAULT_SKILL_LEVEL);
 }
 
 /**
@@ -55,6 +61,30 @@ function areTeamsBalanced(teams: Player[][], tolerance: number): boolean {
 }
 
 /**
+ * Get tolerance value for a balance mode
+ */
+function getTolerance(balanceMode: BalanceMode): number {
+  switch (balanceMode) {
+    case 'strict':
+      return TOLERANCE_STRICT;
+    case 'flexible':
+      return TOLERANCE_FLEXIBLE;
+    case 'random':
+      return TOLERANCE_RANDOM;
+  }
+}
+
+/**
+ * Filter players by gender (men vs women/other)
+ */
+function filterPlayersByGender(players: Player[]): { men: Player[], women: Player[] } {
+  return {
+    men: players.filter(p => p.gender === 'M'),
+    women: players.filter(p => p.gender !== 'M'), // F and X together
+  };
+}
+
+/**
  * Distribute players into teams randomly with balance checking
  */
 export function generateBalancedTeams(
@@ -79,8 +109,8 @@ export function generateBalancedTeams(
     return teams;
   }
 
-  // Determine tolerance based on mode
-  const tolerance = balanceMode === 'strict' ? 0.05 : 0.15; // 5% or 15%
+  // Get tolerance for this mode
+  const tolerance = getTolerance(balanceMode);
 
   // Try to find a balanced configuration
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -120,8 +150,7 @@ export function generateBalancedTeamsMixed(
   balanceMode: BalanceMode,
   maxAttempts: number = 100
 ): Player[][] {
-  const men = players.filter(p => p.gender === 'M');
-  const women = players.filter(p => p.gender !== 'M'); // F and X together
+  const { men, women } = filterPlayersByGender(players);
 
   // Generate balanced teams for each group
   const menTeams = generateBalancedTeams(men, numTeams, balanceMode, maxAttempts);
@@ -146,8 +175,7 @@ export function generateBalancedTeamsSplit(
   balanceMode: BalanceMode,
   maxAttempts: number = 100
 ): { men: Player[][], women: Player[][] } {
-  const men = players.filter(p => p.gender === 'M');
-  const women = players.filter(p => p.gender !== 'M');
+  const { men, women } = filterPlayersByGender(players);
 
   return {
     men: generateBalancedTeams(men, numTeams, balanceMode, maxAttempts),
@@ -168,19 +196,19 @@ export function getBalanceModeConfig(mode: BalanceMode): {
       return {
         label: 'Strict (5%)',
         description: 'Équipes très égales, moins de combinaisons possibles',
-        tolerance: 0.05,
+        tolerance: TOLERANCE_STRICT,
       };
     case 'flexible':
       return {
         label: 'Flexible (15%)',
         description: 'Plus de variété dans les duels, léger déséquilibre possible',
-        tolerance: 0.15,
+        tolerance: TOLERANCE_FLEXIBLE,
       };
     case 'random':
       return {
         label: 'Aléatoire',
         description: 'Rotation aléatoire sans calcul de force',
-        tolerance: 1.0,
+        tolerance: TOLERANCE_RANDOM,
       };
   }
 }
