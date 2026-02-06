@@ -153,13 +153,15 @@ export default function SessionDetailsPage() {
       // Calculer les mises à jour Elo
       const updates = computeEloUpdates(teamsWithElo, winningTeamIndex);
 
-      // Appliquer les mises à jour dans Supabase
-      for (const update of updates) {
-        await supabase
-          .from("members")
-          .update({ elo_rating: update.newRating })
-          .eq("id", update.memberId);
-      }
+      // Appliquer les mises à jour dans Supabase (en parallèle)
+      await Promise.all(
+        updates.map((update) =>
+          supabase
+            .from("members")
+            .update({ elo_rating: update.newRating })
+            .eq("id", update.memberId)
+        )
+      );
 
       // Recharger les données pour refléter les changements
       await fetchData();

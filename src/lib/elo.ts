@@ -57,8 +57,10 @@ export interface EloUpdate {
 /**
  * Compute Elo rating updates for all players after a match.
  *
- * Given teams (arrays of players with id and elo_rating),
- * and the index of the winning team, returns the list of rating updates.
+ * For matches with more than 2 teams, each team's expected score is
+ * calculated against the average rating of all other teams combined.
+ * This is a simplified approach for multi-team scenarios that preserves
+ * the Elo invariant (total rating change sums to approximately zero).
  *
  * @param teams - Array of teams, each team is an array of { id, elo_rating }
  * @param winningTeamIndex - The 0-based index of the winning team
