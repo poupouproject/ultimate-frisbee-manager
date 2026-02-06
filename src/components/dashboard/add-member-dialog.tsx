@@ -23,6 +23,7 @@ export interface Member {
   speed: number;
   throwing: number;
   is_active: boolean;
+  elo_rating: number;
 }
 
 interface AddMemberDialogProps {

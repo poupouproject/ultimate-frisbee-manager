@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, PlusCircle, Zap, Target, User } from "lucide-react";
+import { Loader2, PlusCircle, Zap, Target, User, Trophy } from "lucide-react";
 import { AddMemberDialog, Member } from "./add-member-dialog";
 import { Badge } from "@/components/ui/badge";
 
@@ -122,6 +122,12 @@ export function MembersTable({ clubId }: { clubId: string }) {
 
                   <TableCell className="text-right pr-4 py-3">
                     <div className="flex items-center justify-end gap-2 sm:gap-4">
+                        {/* ELO RATING */}
+                        <div className="flex items-center gap-1 bg-purple-50 text-purple-700 px-2 py-1 rounded border border-purple-100">
+                            <Trophy className="h-3.5 w-3.5 text-purple-600" />
+                            <span className="font-bold text-sm">{member.elo_rating ?? 1000}</span>
+                        </div>
+
                         {/* VITESSE */}
                         <div className="flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-1 rounded border border-yellow-100">
                             <Zap className="h-3.5 w-3.5 fill-yellow-500 text-yellow-600" />

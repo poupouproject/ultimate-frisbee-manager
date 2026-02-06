@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { 
   ArrowLeft, CalendarDays, MapPin, CheckCircle2, XCircle, HelpCircle, 
-  Sparkles, ClipboardList, Shirt, Loader2, RefreshCw 
+  Sparkles, ClipboardList, Shirt, Loader2, RefreshCw, Trophy 
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,6 +23,7 @@ import {
   BalanceMode, 
   getBalanceModeConfig 
 } from "@/lib/team-balancer";
+import { computeEloUpdates, DEFAULT_ELO_RATING } from "@/lib/elo";
 
 export default function SessionDetailsPage() {
   const params = useParams();
@@ -43,6 +44,7 @@ export default function SessionDetailsPage() {
   const [balanceMode, setBalanceMode] = useState<BalanceMode>("flexible"); // Mode d'équilibrage
   const [generatedTeams, setGeneratedTeams] = useState<any[][]>([]);
   const [generatedTeamsSplit, setGeneratedTeamsSplit] = useState<{ men: any[][], women: any[][] } | null>(null);
+  const [declaringWinner, setDeclaringWinner] = useState(false);
 
   // 1. CHARGEMENT
   const fetchData = useCallback(async () => {
@@ -128,6 +130,45 @@ export default function SessionDetailsPage() {
 
     if (error) {
         alert("Erreur lors de la sauvegarde automatique.");
+    }
+  };
+
+  // 3. DÉCLARATION DU VAINQUEUR ET MISE À JOUR ELO
+  const handleDeclareWinner = async (winningTeamIndex: number) => {
+    if (!confirm(`Déclarer l'Équipe ${winningTeamIndex + 1} gagnante et mettre à jour les classements Elo ?`)) {
+      return;
+    }
+
+    setDeclaringWinner(true);
+
+    try {
+      // Construire les équipes avec les elo_rating actuels des membres
+      const teamsWithElo = generatedTeams.map((team) =>
+        team.map((p: any) => ({
+          id: p.id,
+          elo_rating: p.elo_rating ?? DEFAULT_ELO_RATING,
+        }))
+      );
+
+      // Calculer les mises à jour Elo
+      const updates = computeEloUpdates(teamsWithElo, winningTeamIndex);
+
+      // Appliquer les mises à jour dans Supabase
+      for (const update of updates) {
+        await supabase
+          .from("members")
+          .update({ elo_rating: update.newRating })
+          .eq("id", update.memberId);
+      }
+
+      // Recharger les données pour refléter les changements
+      await fetchData();
+
+      alert("Classements Elo mis à jour avec succès !");
+    } catch (error: any) {
+      alert("Erreur lors de la mise à jour des classements : " + error.message);
+    } finally {
+      setDeclaringWinner(false);
     }
   };
 
@@ -344,12 +385,27 @@ export default function SessionDetailsPage() {
                                     <CardContent className="pt-4 p-4">
                                         <ul className="space-y-3">
                                             {team.map((p: any) => (
-                                                <li key={p.id} className="text-sm flex items-center gap-2">
-                                                    <div className="h-2 w-2 rounded-full bg-indigo-400"></div>
-                                                    <span className="font-medium">{p.full_name}</span>
+                                                <li key={p.id} className="text-sm flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="h-2 w-2 rounded-full bg-indigo-400"></div>
+                                                        <span className="font-medium">{p.full_name}</span>
+                                                    </div>
+                                                    <span className="text-xs text-purple-600 font-semibold">{p.elo_rating ?? 1000}</span>
                                                 </li>
                                             ))}
                                         </ul>
+                                        <Button
+                                            className="w-full mt-4 bg-amber-600 hover:bg-amber-700"
+                                            size="sm"
+                                            disabled={declaringWinner}
+                                            onClick={() => handleDeclareWinner(idx)}
+                                        >
+                                            {declaringWinner ? (
+                                                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Mise à jour...</>
+                                            ) : (
+                                                <><Trophy className="mr-2 h-4 w-4" /> Déclarer vainqueur</>
+                                            )}
+                                        </Button>
                                     </CardContent>
                                 </Card>
                             ))}
