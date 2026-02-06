@@ -7,8 +7,13 @@
 * **Gestion des membres :** Centralisation des informations des joueurs.
 * **Confirmation de présence :** Suivi en temps réel de qui participe à la prochaine séance.
 * **Générateur d'équipes intelligent :** Création automatique d'équipes équilibrées basées sur :
-* Le niveau de compétence (vitesse et lancers).
-* Le respect de la parité homme/femme.
+  * Le niveau de compétence (vitesse et lancers).
+  * Le respect de la parité homme/femme.
+  * **Nouveau !** Trois modes d'équilibrage :
+    * **Strict (5%)** : Équipes très égales pour des matchs compétitifs.
+    * **Flexible (15%)** : Plus de variété dans les duels avec léger déséquilibre.
+    * **Aléatoire** : Rotation complètement aléatoire sans calcul de force.
+  * Bouton "Regénérer" pour créer de nouvelles combinaisons d'équipes.
 
 
 * **Authentification simplifiée :** Connexion via Google ou GitHub (via Supabase Auth).

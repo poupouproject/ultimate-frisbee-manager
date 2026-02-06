@@ -12,10 +12,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { 
   ArrowLeft, CalendarDays, MapPin, CheckCircle2, XCircle, HelpCircle, 
-  Sparkles, ClipboardList, Shirt, Loader2 
+  Sparkles, ClipboardList, Shirt, Loader2, RefreshCw 
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { 
+  generateBalancedTeamsMixed, 
+  generateBalancedTeamsSplit, 
+  BalanceMode, 
+  getBalanceModeConfig 
+} from "@/lib/team-balancer";
 
 export default function SessionDetailsPage() {
   const params = useParams();
@@ -33,6 +40,7 @@ export default function SessionDetailsPage() {
   // Générateur
   const [teamCount, setTeamCount] = useState(2);
   const [teamMode, setTeamMode] = useState<"mixed" | "split">("mixed");
+  const [balanceMode, setBalanceMode] = useState<BalanceMode>("flexible"); // Mode d'équilibrage
   const [generatedTeams, setGeneratedTeams] = useState<any[][]>([]);
   const [generatedTeamsSplit, setGeneratedTeamsSplit] = useState<{ men: any[][], women: any[][] } | null>(null);
 
@@ -89,46 +97,11 @@ export default function SessionDetailsPage() {
 
     setSavingTeams(true); // Petit effet de chargement
 
-    // Fonction utilitaire pour calculer la force
-    const getScore = (p: any) => (p.speed || 5) + (p.throwing || 5);
-
-    // Fonction de distribution "Snake Draft"
-    const distributeSnake = (pool: any[], numTeams: number) => {
-// Trier par force décroissante
-        pool.sort((a, b) => getScore(b) - getScore(a));
-
-        const buckets: any[][] = Array.from({ length: numTeams }, () => []);
-
-        pool.forEach((player, index) => {
-// Calcul de l'index serpentin
-            // Ex pour 2 équipes: 0, 1, 1, 0, 0, 1...
-            const cycle = Math.floor(index / numTeams);
-            const isZig = cycle % 2 === 0;
-            const teamIndex = isZig ? (index % numTeams) : (numTeams - 1 - (index % numTeams));
-            buckets[teamIndex].push(player);
-        });
-        return buckets;
-    };
-
     let dataToSave: any = null;
 
     if (teamMode === "mixed") {
-// MODE MIXTE : On répartit les H et les F équitablement dans les MÊMES équipes
-        const men = presentPlayers.filter(p => p.gender === 'M');
-        const women = presentPlayers.filter(p => p.gender !== 'M'); // F et X ensemble
-        
-        // On initialise les équipes vides
-        const teams: any[][] = Array.from({ length: teamCount }, () => []);
-
-        // On distribue les hommes
-        const menTeams = distributeSnake(men, teamCount);
-// On distribue les femmes
-        const womenTeams = distributeSnake(women, teamCount);
-
-        // On fusionne
-        for (let i = 0; i < teamCount; i++) {
-            teams[i] = [...menTeams[i], ...womenTeams[i]];
-        }
+        // MODE MIXTE : On répartit les H et les F équitablement dans les MÊMES équipes
+        const teams = generateBalancedTeamsMixed(presentPlayers, teamCount, balanceMode);
         
         // Mise à jour locale + Préparation sauvegarde
         setGeneratedTeams(teams);
@@ -136,10 +109,8 @@ export default function SessionDetailsPage() {
         dataToSave = teams;
 
     } else {
-// MODE PAR SEXE : On fait des équipes de gars VS gars, et filles VS filles
-        const men = presentPlayers.filter(p => p.gender === 'M');
-        const women = presentPlayers.filter(p => p.gender !== 'M');
-        const splitResult = { men: distributeSnake(men, teamCount), women: distributeSnake(women, teamCount) };
+        // MODE PAR SEXE : On fait des équipes de gars VS gars, et filles VS filles
+        const splitResult = generateBalancedTeamsSplit(presentPlayers, teamCount, balanceMode);
         
         // Mise à jour locale + Préparation sauvegarde
         setGeneratedTeamsSplit(splitResult);
@@ -295,63 +266,118 @@ export default function SessionDetailsPage() {
             <TabsContent value="teams" className="mt-4 space-y-6">
                 <Card className="bg-slate-50 border-slate-200">
                     <CardHeader className="pb-3"><CardTitle className="text-lg flex items-center gap-2"><Sparkles className="h-5 w-5 text-indigo-500"/> Configuration</CardTitle></CardHeader>
-                    <CardContent className="flex flex-col sm:flex-row gap-6 items-end">
-                        <div className="w-full sm:w-1/3 space-y-2">
-                            <Label>Nombre d'équipes</Label>
-                            <Input type="number" min={2} max={10} value={teamCount} onChange={(e) => setTeamCount(parseInt(e.target.value))} />
-                        </div>
-                        <div className="w-full sm:w-1/3 space-y-2">
-                            <Label>Type de jeu</Label>
-                            <div className="flex items-center gap-2 bg-white p-1 rounded-md border">
-                                <Button variant={teamMode === 'mixed' ? 'default' : 'ghost'} className="flex-1 text-xs" onClick={() => setTeamMode('mixed')}>Mixte</Button>
-                                <Button variant={teamMode === 'split' ? 'default' : 'ghost'} className="flex-1 text-xs" onClick={() => setTeamMode('split')}>Séparé</Button>
+                    <CardContent className="flex flex-col gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="space-y-2">
+                                <Label>Nombre d'équipes</Label>
+                                <Input type="number" min={2} max={10} value={teamCount} onChange={(e) => setTeamCount(parseInt(e.target.value))} />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Type de jeu</Label>
+                                <div className="flex items-center gap-2 bg-white p-1 rounded-md border">
+                                    <Button variant={teamMode === 'mixed' ? 'default' : 'ghost'} className="flex-1 text-xs" onClick={() => setTeamMode('mixed')}>Mixte</Button>
+                                    <Button variant={teamMode === 'split' ? 'default' : 'ghost'} className="flex-1 text-xs" onClick={() => setTeamMode('split')}>Séparé</Button>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Équilibrage</Label>
+                                <Select value={balanceMode} onValueChange={(value) => setBalanceMode(value as BalanceMode)}>
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="strict">Strict (5%)</SelectItem>
+                                        <SelectItem value="flexible">Flexible (15%)</SelectItem>
+                                        <SelectItem value="random">Aléatoire</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="sm:invisible">Action</Label>
+                                <Button 
+                                    className="w-full" 
+                                    onClick={handleGenerateTeams} 
+                                    disabled={savingTeams}
+                                >
+                                    {savingTeams ? (
+                                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Publication...</>
+                                    ) : (
+                                        <><Sparkles className="mr-2 h-4 w-4" /> Générer</>
+                                    )}
+                                </Button>
                             </div>
                         </div>
-                        <div className="w-full sm:w-1/3">
-                             <Button 
-                                className="w-full" 
-                                onClick={handleGenerateTeams} 
-                                disabled={savingTeams}
-                             >
-                                {savingTeams ? (
-                                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Publication...</>
-                                ) : (
-                                    <><Sparkles className="mr-2 h-4 w-4" /> Générer & Publier</>
-                                )}
-                             </Button>
+                        
+                        {/* Balance mode description */}
+                        <div className="text-xs text-muted-foreground bg-white p-3 rounded-md border">
+                            {getBalanceModeConfig(balanceMode).description}
                         </div>
                     </CardContent>
                 </Card>
 
                 {teamMode === 'mixed' && generatedTeams.length > 0 && (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {generatedTeams.map((team, idx) => (
-                            <Card key={idx} className="border-t-4 border-t-indigo-500 shadow-sm">
-                                <CardHeader className="bg-slate-50 pb-2 border-b p-4">
-                                    <div className="flex justify-between items-center">
-                                        <CardTitle className="text-base">Équipe {idx + 1}</CardTitle>
-                                        <div className="text-xs text-muted-foreground font-medium">{team.length} joueurs</div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="pt-4 p-4">
-                                    <ul className="space-y-3">
-                                        {team.map((p: any) => (
-                                            <li key={p.id} className="text-sm flex items-center gap-2">
-                                                <div className="h-2 w-2 rounded-full bg-indigo-400"></div>
-                                                <span className="font-medium">{p.full_name}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
+                    <>
+                        {/* Regenerate button */}
+                        <div className="flex justify-end">
+                            <Button 
+                                variant="outline" 
+                                onClick={handleGenerateTeams}
+                                disabled={savingTeams}
+                            >
+                                {savingTeams ? (
+                                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Regénération...</>
+                                ) : (
+                                    <><RefreshCw className="mr-2 h-4 w-4" /> Regénérer</>
+                                )}
+                            </Button>
+                        </div>
+                        
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            {generatedTeams.map((team, idx) => (
+                                <Card key={idx} className="border-t-4 border-t-indigo-500 shadow-sm">
+                                    <CardHeader className="bg-slate-50 pb-2 border-b p-4">
+                                        <div className="flex justify-between items-center">
+                                            <CardTitle className="text-base">Équipe {idx + 1}</CardTitle>
+                                            <div className="text-xs text-muted-foreground font-medium">{team.length} joueurs</div>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="pt-4 p-4">
+                                        <ul className="space-y-3">
+                                            {team.map((p: any) => (
+                                                <li key={p.id} className="text-sm flex items-center gap-2">
+                                                    <div className="h-2 w-2 rounded-full bg-indigo-400"></div>
+                                                    <span className="font-medium">{p.full_name}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </>
                 )}
                 
                 {teamMode === 'split' && generatedTeamsSplit && (
-                    <div className="text-center p-4 bg-yellow-50 text-yellow-800 rounded-md">
-                       Les équipes séparées ont été générées et publiées sur le tableau de bord.
-                    </div>
+                    <>
+                        {/* Regenerate button */}
+                        <div className="flex justify-end">
+                            <Button 
+                                variant="outline" 
+                                onClick={handleGenerateTeams}
+                                disabled={savingTeams}
+                            >
+                                {savingTeams ? (
+                                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Regénération...</>
+                                ) : (
+                                    <><RefreshCw className="mr-2 h-4 w-4" /> Regénérer</>
+                                )}
+                            </Button>
+                        </div>
+                        
+                        <div className="text-center p-4 bg-yellow-50 text-yellow-800 rounded-md">
+                           Les équipes séparées ont été générées et publiées sur le tableau de bord.
+                        </div>
+                    </>
                 )}
             </TabsContent>
         </Tabs>
