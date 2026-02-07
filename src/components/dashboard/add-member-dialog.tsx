@@ -14,6 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Trash2 } from "lucide-react"; 
+import { DEFAULT_ELO_RATING } from "@/lib/elo";
 
 export interface Member {
   id: string;
@@ -57,7 +58,7 @@ export function AddMemberDialog({
     gender: "M",
     speed: 5,
     throwing: 5,
-    elo_rating: 1000,
+    elo_rating: DEFAULT_ELO_RATING,
   });
 
   // Quand la fenêtre s'ouvre ou que le membre change, on met à jour le formulaire
@@ -70,7 +71,7 @@ export function AddMemberDialog({
         gender: memberToEdit.gender,
         speed: memberToEdit.speed,
         throwing: memberToEdit.throwing,
-        elo_rating: memberToEdit.elo_rating ?? 1000,
+        elo_rating: memberToEdit.elo_rating ?? DEFAULT_ELO_RATING,
       });
     } else {
       // Mode CRÉATION : on vide les champs
@@ -80,7 +81,7 @@ export function AddMemberDialog({
         gender: "M",
         speed: 5,
         throwing: 5,
-        elo_rating: 1000,
+        elo_rating: DEFAULT_ELO_RATING,
       });
     }
   }, [memberToEdit, open]);

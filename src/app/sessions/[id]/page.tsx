@@ -200,10 +200,8 @@ export default function SessionDetailsPage() {
         }
       }
 
-      // Exécuter toutes les mises à jour
-      for (const query of statsUpdates) {
-        await query;
-      }
+      // Exécuter toutes les mises à jour en parallèle
+      await Promise.all(statsUpdates.map(q => Promise.resolve(q)));
 
       // Recharger les données pour refléter les changements
       await fetchData();
@@ -453,7 +451,7 @@ export default function SessionDetailsPage() {
                                                         <div className="h-2 w-2 rounded-full bg-indigo-400"></div>
                                                         <span className="font-medium">{p.full_name}</span>
                                                     </div>
-                                                    <span className="text-xs text-purple-600 font-semibold">{p.elo_rating ?? 1000}</span>
+                                                    <span className="text-xs text-purple-600 font-semibold">{p.elo_rating ?? DEFAULT_ELO_RATING}</span>
                                                 </li>
                                             ))}
                                         </ul>

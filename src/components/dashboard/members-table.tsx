@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2, PlusCircle, Zap, Target, User, Trophy } from "lucide-react";
 import { AddMemberDialog, Member } from "./add-member-dialog";
 import { Badge } from "@/components/ui/badge";
+import { DEFAULT_ELO_RATING } from "@/lib/elo";
 
 export function MembersTable({ clubId, useEloRanking }: { clubId: string; useEloRanking?: boolean }) {
   const [members, setMembers] = useState<Member[]>([]);
@@ -126,7 +127,7 @@ export function MembersTable({ clubId, useEloRanking }: { clubId: string; useElo
                         {useEloRanking && (
                           <div className="flex items-center gap-1 bg-purple-50 text-purple-700 px-2 py-1 rounded border border-purple-100">
                               <Trophy className="h-3.5 w-3.5 text-purple-600" />
-                              <span className="font-bold text-sm">{member.elo_rating ?? 1000}</span>
+                              <span className="font-bold text-sm">{member.elo_rating ?? DEFAULT_ELO_RATING}</span>
                           </div>
                         )}
 
