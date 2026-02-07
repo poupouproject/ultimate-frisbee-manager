@@ -21,7 +21,8 @@ import {
   generateBalancedTeamsMixed, 
   generateBalancedTeamsSplit, 
   BalanceMode, 
-  getBalanceModeConfig 
+  getBalanceModeConfig,
+  RankingMode 
 } from "@/lib/team-balancer";
 import { computeEloUpdates, DEFAULT_ELO_RATING } from "@/lib/elo";
 
@@ -46,6 +47,10 @@ export default function SessionDetailsPage() {
   const [generatedTeamsSplit, setGeneratedTeamsSplit] = useState<{ men: any[][], women: any[][] } | null>(null);
   const [declaringWinner, setDeclaringWinner] = useState(false);
 
+  // Elo
+  const [clubUseElo, setClubUseElo] = useState(false); // Club-level Elo setting
+  const [useEloForSession, setUseEloForSession] = useState(false); // Per-session toggle
+
   // 1. CHARGEMENT
   const fetchData = useCallback(async () => {
     try {
@@ -62,6 +67,13 @@ export default function SessionDetailsPage() {
              setGeneratedTeamsSplit(sessionData.generated_teams);
              setTeamMode('split');
          }
+      }
+
+      // Charger le club pour récupérer le setting use_elo_ranking
+      const { data: clubData } = await supabase.from("clubs").select("use_elo_ranking").eq("id", sessionData.club_id).single();
+      if (clubData) {
+        setClubUseElo(clubData.use_elo_ranking ?? false);
+        setUseEloForSession(clubData.use_elo_ranking ?? false);
       }
 
       const { data: membersData } = await supabase.from("members").select("*").eq("club_id", sessionData.club_id).order("full_name");
@@ -100,10 +112,11 @@ export default function SessionDetailsPage() {
     setSavingTeams(true); // Petit effet de chargement
 
     let dataToSave: any = null;
+    const rankingMode: RankingMode = useEloForSession ? 'elo' : 'manual';
 
     if (teamMode === "mixed") {
         // MODE MIXTE : On répartit les H et les F équitablement dans les MÊMES équipes
-        const teams = generateBalancedTeamsMixed(presentPlayers, teamCount, balanceMode);
+        const teams = generateBalancedTeamsMixed(presentPlayers, teamCount, balanceMode, 100, rankingMode);
         
         // Mise à jour locale + Préparation sauvegarde
         setGeneratedTeams(teams);
@@ -112,7 +125,7 @@ export default function SessionDetailsPage() {
 
     } else {
         // MODE PAR SEXE : On fait des équipes de gars VS gars, et filles VS filles
-        const splitResult = generateBalancedTeamsSplit(presentPlayers, teamCount, balanceMode);
+        const splitResult = generateBalancedTeamsSplit(presentPlayers, teamCount, balanceMode, 100, rankingMode);
         
         // Mise à jour locale + Préparation sauvegarde
         setGeneratedTeamsSplit(splitResult);
@@ -133,42 +146,71 @@ export default function SessionDetailsPage() {
     }
   };
 
-  // 3. DÉCLARATION DU VAINQUEUR ET MISE À JOUR ELO
+  // 3. DÉCLARATION DU VAINQUEUR ET MISE À JOUR ELO + STATS
   const handleDeclareWinner = async (winningTeamIndex: number) => {
-    if (!confirm(`Déclarer l'Équipe ${winningTeamIndex + 1} gagnante et mettre à jour les classements Elo ?`)) {
+    const willUpdateElo = clubUseElo && useEloForSession;
+    const confirmMsg = willUpdateElo
+      ? `Déclarer l'Équipe ${winningTeamIndex + 1} gagnante et mettre à jour les classements Elo ?`
+      : `Déclarer l'Équipe ${winningTeamIndex + 1} gagnante et mettre à jour les statistiques ?`;
+
+    if (!confirm(confirmMsg)) {
       return;
     }
 
     setDeclaringWinner(true);
 
     try {
-      // Construire les équipes avec les elo_rating actuels des membres
-      const teamsWithElo = generatedTeams.map((team) =>
-        team.map((p: any) => ({
-          id: p.id,
-          elo_rating: p.elo_rating ?? DEFAULT_ELO_RATING,
-        }))
-      );
+      // Mettre à jour les wins/losses pour tous les joueurs
+      const statsUpdates = [];
+      for (let teamIdx = 0; teamIdx < generatedTeams.length; teamIdx++) {
+        const isWinner = teamIdx === winningTeamIndex;
+        for (const player of generatedTeams[teamIdx]) {
+          const currentWins = player.wins ?? 0;
+          const currentLosses = player.losses ?? 0;
+          statsUpdates.push(
+            supabase
+              .from("members")
+              .update({
+                wins: isWinner ? currentWins + 1 : currentWins,
+                losses: isWinner ? currentLosses : currentLosses + 1,
+              })
+              .eq("id", player.id)
+          );
+        }
+      }
 
-      // Calculer les mises à jour Elo
-      const updates = computeEloUpdates(teamsWithElo, winningTeamIndex);
+      // Mettre à jour Elo seulement si activé
+      if (willUpdateElo) {
+        const teamsWithElo = generatedTeams.map((team) =>
+          team.map((p: any) => ({
+            id: p.id,
+            elo_rating: p.elo_rating ?? DEFAULT_ELO_RATING,
+          }))
+        );
 
-      // Appliquer les mises à jour dans Supabase (en parallèle)
-      await Promise.all(
-        updates.map((update) =>
-          supabase
-            .from("members")
-            .update({ elo_rating: update.newRating })
-            .eq("id", update.memberId)
-        )
-      );
+        const updates = computeEloUpdates(teamsWithElo, winningTeamIndex);
+
+        for (const update of updates) {
+          statsUpdates.push(
+            supabase
+              .from("members")
+              .update({ elo_rating: update.newRating })
+              .eq("id", update.memberId)
+          );
+        }
+      }
+
+      // Exécuter toutes les mises à jour
+      for (const query of statsUpdates) {
+        await query;
+      }
 
       // Recharger les données pour refléter les changements
       await fetchData();
 
-      alert("Classements Elo mis à jour avec succès !");
+      alert("Statistiques mises à jour avec succès !");
     } catch (error: any) {
-      alert("Erreur lors de la mise à jour des classements : " + error.message);
+      alert("Erreur lors de la mise à jour : " + error.message);
     } finally {
       setDeclaringWinner(false);
     }
@@ -355,6 +397,25 @@ export default function SessionDetailsPage() {
                         <div className="text-xs text-muted-foreground bg-white p-3 rounded-md border">
                             {getBalanceModeConfig(balanceMode).description}
                         </div>
+
+                        {/* Elo toggle (visible si le club a activé le Elo) */}
+                        {clubUseElo && (
+                          <div className="flex items-center justify-between bg-white p-3 rounded-md border">
+                            <div>
+                              <Label className="text-sm font-medium">Équilibrage Elo</Label>
+                              <p className="text-xs text-muted-foreground">Utiliser le classement Elo au lieu des stats manuelles pour cette session</p>
+                            </div>
+                            <Button
+                              variant={useEloForSession ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setUseEloForSession(!useEloForSession)}
+                              className={useEloForSession ? "bg-purple-600 hover:bg-purple-700" : ""}
+                            >
+                              <Trophy className="mr-1 h-3.5 w-3.5" />
+                              {useEloForSession ? "Elo activé" : "Elo désactivé"}
+                            </Button>
+                          </div>
+                        )}
                     </CardContent>
                 </Card>
 

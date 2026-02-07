@@ -24,6 +24,8 @@ export interface Member {
   throwing: number;
   is_active: boolean;
   elo_rating: number;
+  wins: number;
+  losses: number;
 }
 
 interface AddMemberDialogProps {
@@ -32,7 +34,8 @@ interface AddMemberDialogProps {
   clubId: string;
   memberToEdit?: Member | null;
   onSuccess: () => void;
-  onDelete?: (id: string) => void; 
+  onDelete?: (id: string) => void;
+  useEloRanking?: boolean;
 }
 
 export function AddMemberDialog({ 
@@ -41,7 +44,8 @@ export function AddMemberDialog({
   clubId, 
   memberToEdit, 
   onSuccess,
-  onDelete 
+  onDelete,
+  useEloRanking 
 }: AddMemberDialogProps) {
   
   const [loading, setLoading] = useState(false);
@@ -53,6 +57,7 @@ export function AddMemberDialog({
     gender: "M",
     speed: 5,
     throwing: 5,
+    elo_rating: 1000,
   });
 
   // Quand la fenêtre s'ouvre ou que le membre change, on met à jour le formulaire
@@ -65,6 +70,7 @@ export function AddMemberDialog({
         gender: memberToEdit.gender,
         speed: memberToEdit.speed,
         throwing: memberToEdit.throwing,
+        elo_rating: memberToEdit.elo_rating ?? 1000,
       });
     } else {
       // Mode CRÉATION : on vide les champs
@@ -74,6 +80,7 @@ export function AddMemberDialog({
         gender: "M",
         speed: 5,
         throwing: 5,
+        elo_rating: 1000,
       });
     }
   }, [memberToEdit, open]);
@@ -91,6 +98,7 @@ export function AddMemberDialog({
         speed: formData.speed,
         throwing: formData.throwing,
         is_active: true,
+        elo_rating: formData.elo_rating,
       };
 
       if (memberToEdit) {
@@ -212,6 +220,32 @@ export function AddMemberDialog({
                 <span className="font-bold w-6">{formData.throwing}</span>
               </div>
             </div>
+
+            {/* ELO RATING (visible uniquement si le club utilise le Elo) */}
+            {useEloRanking && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="elo_rating" className="text-right">Elo</Label>
+                <Input
+                  id="elo_rating"
+                  type="number"
+                  min="0"
+                  value={formData.elo_rating}
+                  onChange={(e) => setFormData({...formData, elo_rating: Number(e.target.value)})}
+                  className="col-span-3"
+                />
+              </div>
+            )}
+
+            {/* STATS WIN/LOSS (lecture seule, visible en modification) */}
+            {memberToEdit && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label className="text-right">Stats</Label>
+                <div className="col-span-3 flex items-center gap-4 text-sm">
+                  <span className="text-green-600 font-semibold">{memberToEdit.wins ?? 0} V</span>
+                  <span className="text-red-600 font-semibold">{memberToEdit.losses ?? 0} D</span>
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="flex flex-row justify-between sm:justify-between items-center w-full gap-2">
