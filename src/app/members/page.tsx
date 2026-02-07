@@ -54,7 +54,7 @@ export default function MembersPage() {
         </div>
         
         {/* Le tableau des membres vit maintenant ici ! */}
-        <MembersTable clubId={club.id} />
+        <MembersTable clubId={club.id} useEloRanking={club.use_elo_ranking} />
       </main>
     </div>
   );

@@ -12,11 +12,12 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, PlusCircle, Zap, Target, User } from "lucide-react";
+import { Loader2, PlusCircle, Zap, Target, User, Trophy } from "lucide-react";
 import { AddMemberDialog, Member } from "./add-member-dialog";
 import { Badge } from "@/components/ui/badge";
+import { DEFAULT_ELO_RATING } from "@/lib/elo";
 
-export function MembersTable({ clubId }: { clubId: string }) {
+export function MembersTable({ clubId, useEloRanking }: { clubId: string; useEloRanking?: boolean }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -122,6 +123,21 @@ export function MembersTable({ clubId }: { clubId: string }) {
 
                   <TableCell className="text-right pr-4 py-3">
                     <div className="flex items-center justify-end gap-2 sm:gap-4">
+                        {/* ELO RATING (visible si le club utilise le Elo) */}
+                        {useEloRanking && (
+                          <div className="flex items-center gap-1 bg-purple-50 text-purple-700 px-2 py-1 rounded border border-purple-100">
+                              <Trophy className="h-3.5 w-3.5 text-purple-600" />
+                              <span className="font-bold text-sm">{member.elo_rating ?? DEFAULT_ELO_RATING}</span>
+                          </div>
+                        )}
+
+                        {/* WIN / LOSS */}
+                        <div className="flex items-center gap-1 text-xs">
+                            <span className="text-green-600 font-semibold">{member.wins ?? 0}V</span>
+                            <span className="text-muted-foreground">/</span>
+                            <span className="text-red-600 font-semibold">{member.losses ?? 0}D</span>
+                        </div>
+
                         {/* VITESSE */}
                         <div className="flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-1 rounded border border-yellow-100">
                             <Zap className="h-3.5 w-3.5 fill-yellow-500 text-yellow-600" />
@@ -149,7 +165,8 @@ export function MembersTable({ clubId }: { clubId: string }) {
         clubId={clubId}
         memberToEdit={memberToEdit}
         onSuccess={fetchMembers}
-        onDelete={handleDelete} 
+        onDelete={handleDelete}
+        useEloRanking={useEloRanking}
       />
     </Card>
   );
