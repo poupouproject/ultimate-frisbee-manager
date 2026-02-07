@@ -62,6 +62,34 @@ npm run dev
 
 Ouvrez [http://localhost:3000](https://www.google.com/search?q=http://localhost:3000) pour voir le résultat.
 
+## 🔐 Authentification sur les environnements de preview Vercel
+
+Lors du déploiement sur Vercel, les URL de preview (ex: `https://ultimate-frisbee-manager-abc123.vercel.app`) ont une adresse différente de la production. Pour que l'authentification OAuth fonctionne correctement sur ces environnements, vous devez configurer Supabase pour accepter les redirections depuis ces URL.
+
+### Étapes de configuration
+
+1. **Ouvrir le tableau de bord Supabase** → **Authentication** → **URL Configuration**
+
+2. **Ajouter les URL de redirect autorisées** dans la section **Redirect URLs** :
+   ```
+   https://*.vercel.app/auth/callback
+   ```
+   > ⚠️ Les wildcards (`*`) sont supportés par Supabase. Cela autorise toutes vos preview branches à rediriger correctement vers votre callback d'authentification.
+
+3. **Vérifier le Site URL** : Assurez-vous que votre **Site URL** est configuré sur votre URL de production (ex: `https://votre-domaine.vercel.app`).
+
+4. **Côté OAuth Provider** (GitHub, Google, Azure) : Ajoutez l'URL de callback Supabase dans les paramètres de votre application OAuth. L'URL est disponible dans votre tableau de bord Supabase sous **Authentication** → **Providers**.
+
+### Comment ça fonctionne
+
+L'application utilise `window.location.origin` pour construire dynamiquement l'URL de redirection OAuth. Ainsi, que vous soyez en production ou sur un environnement de preview, le callback sera toujours redirigé vers la bonne URL :
+
+```
+https://<votre-preview>.vercel.app/auth/callback?next=/dashboard
+```
+
+La route `/auth/callback` échange le code d'autorisation contre une session Supabase, puis redirige l'utilisateur vers le dashboard.
+
 ## 🤝 Contribuer
 
 Les contributions sont les bienvenues ! Que vous soyez un expert en TypeScript ou que vous débutiez, vous pouvez aider :
