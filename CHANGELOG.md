@@ -1,5 +1,15 @@
 # react-ultimate-shuffler
 
+## 1.2.0
+
+### Minor Changes
+
+- 6d43d8a: Ajout d'une page de paramètres utilisateur accessibles depuis le menu de navigation. Les utilisateurs peuvent désormais gérer leurs préférences et paramètres personnels.
+
+### Patch Changes
+
+- fc46177: Restructuration de l'authentification et du routing avec layout group (`(authenticated)`). Les routes protégées sont maintenant organisées dans un groupe de layout dédié, améliorant la sécurité et la maintenabilité du code. Ajout du callback OAuth avec page côté client et amélioration du middleware de refresh de session.
+
 ## 1.1.0
 
 ### Minor Changes
