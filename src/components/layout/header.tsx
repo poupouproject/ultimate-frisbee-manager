@@ -21,7 +21,7 @@ export function Header() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push("/login"); // Redirection vers le login
+    window.location.href = '/login';
   };
 
   const getLinkClass = (path: string) => {

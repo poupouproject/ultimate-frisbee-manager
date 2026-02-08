@@ -21,10 +21,7 @@ export default function SettingsPage() {
 
   const fetchData = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      router.push("/login");
-      return;
-    }
+    if (!session) return;
 
     const user = session.user;
     setUserProfile({
@@ -218,7 +215,7 @@ export default function SettingsPage() {
               variant="destructive"
               onClick={async () => {
                 await supabase.auth.signOut();
-                router.push("/login");
+                window.location.href = '/login';
               }}
             >
               Se déconnecter
