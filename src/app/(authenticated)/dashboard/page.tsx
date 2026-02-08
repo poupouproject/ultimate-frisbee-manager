@@ -21,10 +21,7 @@ export default function DashboardPage() {
     const {
       data: { session },
     } = await supabase.auth.getSession();
-    if (!session) {
-      router.push("/login");
-      return;
-    }
+    if (!session) return;
 
     const { data: clubs } = await supabase
       .from("clubs")
