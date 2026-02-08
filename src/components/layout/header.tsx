@@ -21,7 +21,7 @@ export function Header() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    router.push("/login"); // Redirection vers le login
+    window.location.href = '/login';
   };
 
   const getLinkClass = (path: string) => {
@@ -97,7 +97,7 @@ export function Header() {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Mon Compte</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Paramètres</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.push("/settings")} className="cursor-pointer">Paramètres</DropdownMenuItem>
             <DropdownMenuItem>Support</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="text-red-600 cursor-pointer">

@@ -9,12 +9,18 @@ import { Provider } from "@supabase/supabase-js";
 export default function LoginPage() {
   
   const handleLogin = async (provider: Provider) => {
-    await supabase.auth.signInWithOAuth({
+    const redirectUrl = `${window.location.origin}/auth/callback`;
+
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: provider,
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo: redirectUrl,
       },
     });
+
+    if (error) {
+      console.error('[Auth] OAuth error:', error);
+    }
   };
 
   return (

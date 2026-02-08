@@ -22,10 +22,7 @@ export default function SessionsPage() {
 
   const fetchData = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      router.push("/login");
-      return;
-    }
+    if (!session) return;
 
     const { data: clubData } = await supabase
       .from('clubs')
