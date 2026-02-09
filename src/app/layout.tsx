@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Ultimate Manager",
-  description: "Gestion de club d'Ultimate Frisbee",
+  title: "EloSports Manager",
+  description: "Plateforme open source et gratuite de gestion de clubs sportifs avec classement Elo et équilibrage automatique des équipes",
 };
 
 export default function RootLayout({
