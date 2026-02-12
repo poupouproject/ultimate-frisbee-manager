@@ -96,8 +96,13 @@ export const SPORTS: SportConfig[] = [
   },
 ];
 
+// Pre-computed lookup map for O(1) access
+const SPORTS_MAP = new Map<string, SportConfig>(
+  SPORTS.map((sport) => [sport.id, sport])
+);
+
 export function getSportById(id: string): SportConfig | undefined {
-  return SPORTS.find((s) => s.id === id);
+  return SPORTS_MAP.get(id);
 }
 
 export function getDefaultRankingParams(sportId: string): RankingParams {
