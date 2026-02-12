@@ -225,8 +225,8 @@ export default function SessionDetailsPage() {
       ? `(Partie ${currentMatchIndex + 1}) ` 
       : "";
     const confirmMsg = willUpdateElo
-      ? `${matchLabel}Déclarer l&apos;Équipe ${winningTeamIndex + 1} gagnante et mettre à jour les classements Elo ?`
-      : `${matchLabel}Déclarer l&apos;Équipe ${winningTeamIndex + 1} gagnante et mettre à jour les statistiques ?`;
+      ? `${matchLabel}Déclarer l'Équipe ${winningTeamIndex + 1} gagnante et mettre à jour les classements Elo ?`
+      : `${matchLabel}Déclarer l'Équipe ${winningTeamIndex + 1} gagnante et mettre à jour les statistiques ?`;
 
     if (!confirm(confirmMsg)) {
       return;
@@ -675,10 +675,16 @@ export default function SessionDetailsPage() {
                                             </ul>
                                             {currentMatch.winnerTeamIndex === undefined && (
                                                 <Button
-                                                    className="w-full mt-4 bg-amber-600 hover:bg-amber-700"
+                                                    className={cn(
+                                                        "w-full mt-4",
+                                                        swapMode 
+                                                            ? "bg-slate-400 cursor-not-allowed" 
+                                                            : "bg-amber-600 hover:bg-amber-700"
+                                                    )}
                                                     size="sm"
                                                     disabled={declaringWinner || swapMode}
                                                     onClick={() => handleDeclareWinner(teamIdx)}
+                                                    title={swapMode ? "Désactivez le mode échange pour déclarer un vainqueur" : undefined}
                                                 >
                                                     {declaringWinner ? (
                                                         <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Mise à jour...</>

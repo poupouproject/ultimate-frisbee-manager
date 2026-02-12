@@ -248,7 +248,9 @@ export interface MultiMatchData {
 
 /**
  * Generate multiple matches for a session
- * Each match has different team compositions while maintaining balance
+ * Each match has different team compositions while maintaining balance.
+ * Diversity is ensured by the Fisher-Yates shuffle applied in generateBalancedTeams
+ * at each call, producing different random permutations.
  */
 export function generateMultipleMatches(
   players: Player[],
