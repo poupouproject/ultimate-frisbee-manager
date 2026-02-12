@@ -229,3 +229,141 @@ export function getBalanceModeConfig(mode: BalanceMode): {
       };
   }
 }
+
+/**
+ * Interface for a single match with its teams
+ */
+export interface Match {
+  teams: Player[][];
+  winnerTeamIndex?: number;
+}
+
+/**
+ * Interface for multi-match session data
+ */
+export interface MultiMatchData {
+  matches: Match[];
+  teamMode: 'mixed' | 'split';
+}
+
+/**
+ * Generate multiple matches for a session
+ * Each match has different team compositions while maintaining balance
+ */
+export function generateMultipleMatches(
+  players: Player[],
+  numTeams: number,
+  numMatches: number,
+  balanceMode: BalanceMode,
+  teamMode: 'mixed' | 'split',
+  maxAttempts: number = 100,
+  rankingMode: RankingMode = 'manual'
+): MultiMatchData {
+  const matches: Match[] = [];
+
+  for (let i = 0; i < numMatches; i++) {
+    let teams: Player[][];
+    
+    if (teamMode === 'mixed') {
+      teams = generateBalancedTeamsMixed(players, numTeams, balanceMode, maxAttempts, rankingMode);
+    } else {
+      // For split mode, we combine men and women teams into a single match structure
+      const splitResult = generateBalancedTeamsSplit(players, numTeams, balanceMode, maxAttempts, rankingMode);
+      // Merge for storage - the UI will handle displaying separately if needed
+      teams = [];
+      for (let j = 0; j < numTeams; j++) {
+        teams.push([...(splitResult.men[j] || []), ...(splitResult.women[j] || [])]);
+      }
+    }
+
+    matches.push({ teams });
+  }
+
+  return { matches, teamMode };
+}
+
+/**
+ * Swap two players between teams within a match
+ * Returns a new match object with the swapped players
+ */
+export function swapPlayers(
+  match: Match,
+  player1: { teamIndex: number; playerIndex: number },
+  player2: { teamIndex: number; playerIndex: number }
+): Match {
+  // Create a deep copy of teams
+  const newTeams = match.teams.map(team => [...team]);
+  
+  // Swap the players
+  const temp = newTeams[player1.teamIndex][player1.playerIndex];
+  newTeams[player1.teamIndex][player1.playerIndex] = newTeams[player2.teamIndex][player2.playerIndex];
+  newTeams[player2.teamIndex][player2.playerIndex] = temp;
+
+  return {
+    ...match,
+    teams: newTeams,
+  };
+}
+
+/**
+ * Move a player from one team to another
+ * Returns a new match object with the moved player
+ */
+export function movePlayer(
+  match: Match,
+  fromTeamIndex: number,
+  playerIndex: number,
+  toTeamIndex: number
+): Match {
+  // Create a deep copy of teams
+  const newTeams = match.teams.map(team => [...team]);
+  
+  // Remove player from source team
+  const [player] = newTeams[fromTeamIndex].splice(playerIndex, 1);
+  
+  // Add player to target team
+  newTeams[toTeamIndex].push(player);
+
+  return {
+    ...match,
+    teams: newTeams,
+  };
+}
+
+/**
+ * Check if data is in multi-match format
+ */
+export function isMultiMatchData(data: unknown): data is MultiMatchData {
+  return (
+    data !== null &&
+    typeof data === 'object' &&
+    'matches' in data &&
+    Array.isArray((data as MultiMatchData).matches)
+  );
+}
+
+/**
+ * Convert legacy single-match data to multi-match format
+ */
+export function convertToMultiMatchFormat(
+  legacyData: Player[][] | { men: Player[][], women: Player[][] },
+  teamMode: 'mixed' | 'split' = 'mixed'
+): MultiMatchData {
+  let teams: Player[][];
+
+  if (Array.isArray(legacyData)) {
+    teams = legacyData;
+  } else {
+    // Convert split format to combined teams
+    teams = [];
+    const numTeams = Math.max(legacyData.men.length, legacyData.women.length);
+    for (let i = 0; i < numTeams; i++) {
+      teams.push([...(legacyData.men[i] || []), ...(legacyData.women[i] || [])]);
+    }
+  }
+
+  return {
+    matches: [{ teams }],
+    teamMode,
+  };
+}
