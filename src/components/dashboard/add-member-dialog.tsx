@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Trash2 } from "lucide-react"; 
 import { DEFAULT_ELO_RATING } from "@/lib/elo";
+import type { RankingParams } from "@/lib/sports";
 
 export interface Member {
   id: string;
@@ -37,7 +38,13 @@ interface AddMemberDialogProps {
   onSuccess: () => void;
   onDelete?: (id: string) => void;
   useEloRanking?: boolean;
+  rankingParams?: RankingParams;
 }
+
+const defaultRankingParams: RankingParams = {
+  skill1: { name: 'Vitesse', enabled: true },
+  skill2: { name: 'Lancer', enabled: true },
+};
 
 export function AddMemberDialog({ 
   open, 
@@ -46,7 +53,8 @@ export function AddMemberDialog({
   memberToEdit, 
   onSuccess,
   onDelete,
-  useEloRanking 
+  useEloRanking,
+  rankingParams = defaultRankingParams
 }: AddMemberDialogProps) {
   
   const [loading, setLoading] = useState(false);
@@ -117,8 +125,9 @@ export function AddMemberDialog({
 
       onSuccess();
       onOpenChange(false);
-    } catch (error: any) {
-      alert("Erreur : " + error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Une erreur est survenue";
+      alert("Erreur : " + errorMessage);
     } finally {
       setLoading(false);
     }
@@ -133,6 +142,9 @@ export function AddMemberDialog({
         }
     }
   };
+
+  const skill1Name = rankingParams.skill1?.name || 'Vitesse';
+  const skill2Name = rankingParams.skill2?.name || 'Lancer';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -190,9 +202,9 @@ export function AddMemberDialog({
               </select>
             </div>
 
-            {/* VITESSE */}
+            {/* SKILL 1 (ex: Vitesse) - utilise le nom personnalisé */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Vitesse</Label>
+              <Label className="text-right">{skill1Name}</Label>
               <div className="col-span-3 flex items-center gap-4">
                 <input
                   type="range"
@@ -206,9 +218,9 @@ export function AddMemberDialog({
               </div>
             </div>
 
-            {/* LANCER */}
+            {/* SKILL 2 (ex: Lancer) - utilise le nom personnalisé */}
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label className="text-right">Lancer</Label>
+              <Label className="text-right">{skill2Name}</Label>
               <div className="col-span-3 flex items-center gap-4">
                 <input
                   type="range"

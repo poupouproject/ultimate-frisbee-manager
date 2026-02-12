@@ -6,11 +6,20 @@ import { Header } from "@/components/layout/header";
 import { MembersTable } from "@/components/dashboard/members-table";
 import { supabase } from "@/lib/supabase";
 import { Users } from "lucide-react";
+import { getSportById, type RankingParams } from "@/lib/sports";
+
+interface Club {
+  id: string;
+  name: string;
+  use_elo_ranking: boolean;
+  sport?: string;
+  ranking_params?: RankingParams;
+}
 
 export default function MembersPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [club, setClub] = useState<any>(null);
+  const [club, setClub] = useState<Club | null>(null);
 
   // On récupère le club pour avoir son ID
   useEffect(() => {
@@ -25,7 +34,7 @@ export default function MembersPage() {
         .single();
 
       if (clubData) {
-        setClub(clubData);
+        setClub(clubData as Club);
         setLoading(false);
       } else {
         router.push("/dashboard"); // Si pas de club, retour au dash pour le créer
@@ -35,6 +44,10 @@ export default function MembersPage() {
   }, [router]);
 
   if (loading) return <div className="flex h-screen items-center justify-center">Chargement...</div>;
+  if (!club) return null;
+
+  const sportConfig = getSportById(club.sport || 'ultimate_frisbee');
+  const rankingParams = club.ranking_params || sportConfig?.defaultRankingParams;
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -46,12 +59,19 @@ export default function MembersPage() {
             </div>
             <div>
                 <h2 className="text-3xl font-bold tracking-tight">Gestion des Membres</h2>
-                <p className="text-muted-foreground">Club : {club.name}</p>
+                <p className="text-muted-foreground flex items-center gap-2">
+                  Club : {club.name}
+                  {sportConfig && <span>{sportConfig.icon}</span>}
+                </p>
             </div>
         </div>
         
         {/* Le tableau des membres vit maintenant ici ! */}
-        <MembersTable clubId={club.id} useEloRanking={club.use_elo_ranking} />
+        <MembersTable 
+          clubId={club.id} 
+          useEloRanking={club.use_elo_ranking}
+          rankingParams={rankingParams}
+        />
       </main>
     </div>
   );
