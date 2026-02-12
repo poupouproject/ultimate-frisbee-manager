@@ -6,15 +6,24 @@ import { Header } from "@/components/layout/header";
 import { StatsCards } from "@/components/dashboard/stats-cards";
 import { CreateClubForm } from "@/components/dashboard/create-club-form";
 import { supabase } from "@/lib/supabase";
-import { CalendarDays, Plus, Trophy } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { DashboardSessions } from "@/components/dashboard/dashboard-sessions";
+import { getSportById, type RankingParams } from "@/lib/sports";
+
+interface Club {
+  id: string;
+  name: string;
+  created_at: string;
+  use_elo_ranking: boolean;
+  sport?: string;
+  ranking_params?: RankingParams;
+}
 
 export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [club, setClub] = useState<any>(null);
+  const [club, setClub] = useState<Club | null>(null);
 
   const checkUserAndClub = async () => {
     setLoading(true);
@@ -30,7 +39,7 @@ export default function DashboardPage() {
       .single();
 
     if (clubs) {
-      setClub(clubs);
+      setClub(clubs as Club);
     }
     setLoading(false);
   };
@@ -54,12 +63,20 @@ export default function DashboardPage() {
     );
   }
 
+  const sportConfig = getSportById(club.sport || 'ultimate_frisbee');
+  const rankingParams = club.ranking_params || sportConfig?.defaultRankingParams;
+
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <Header />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight">{club.name}</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-3xl font-bold tracking-tight">{club.name}</h2>
+            {sportConfig && (
+              <span className="text-2xl" title={sportConfig.name}>{sportConfig.icon}</span>
+            )}
+          </div>
         </div>
 
         <StatsCards clubId={club.id} />
@@ -80,6 +97,12 @@ export default function DashboardPage() {
               </h3>
               <div className="text-sm text-muted-foreground space-y-4">
                  <p>Club créé le {new Date(club.created_at).toLocaleDateString()}.</p>
+                 {sportConfig && (
+                   <p className="flex items-center gap-2">
+                     <span>{sportConfig.icon}</span>
+                     <span>{sportConfig.name}</span>
+                   </p>
+                 )}
                  <div className="border-t pt-4">
                    <p className="italic">Aucune session récente.</p>
                  </div>
@@ -115,9 +138,26 @@ export default function DashboardPage() {
               <p className="text-xs text-muted-foreground mt-2">
                 {club.use_elo_ranking
                   ? "Le score Elo est utilisé pour équilibrer les équipes et sera affiché dans les profils."
-                  : "Les stats manuelles (vitesse, lancer) sont utilisées pour équilibrer les équipes."}
+                  : `Les stats manuelles (${rankingParams?.skill1?.name || 'compétence 1'}, ${rankingParams?.skill2?.name || 'compétence 2'}) sont utilisées pour équilibrer les équipes.`}
               </p>
             </div>
+
+            {/* Affichage des paramètres de classement */}
+            {rankingParams && (
+              <div className="border-t pt-4">
+                <h3 className="font-semibold leading-none tracking-tight mb-3">
+                  Attributs de classement
+                </h3>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <span className="bg-yellow-50 text-yellow-700 px-2 py-1 rounded border border-yellow-100">
+                    {rankingParams.skill1?.name || 'Compétence 1'}
+                  </span>
+                  <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100">
+                    {rankingParams.skill2?.name || 'Compétence 2'}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </main>

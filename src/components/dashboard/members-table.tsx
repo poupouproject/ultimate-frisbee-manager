@@ -12,12 +12,23 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, PlusCircle, Zap, Target, User, Trophy } from "lucide-react";
+import { Loader2, PlusCircle, Zap, Target, Trophy } from "lucide-react";
 import { AddMemberDialog, Member } from "./add-member-dialog";
-import { Badge } from "@/components/ui/badge";
 import { DEFAULT_ELO_RATING } from "@/lib/elo";
+import type { RankingParams } from "@/lib/sports";
 
-export function MembersTable({ clubId, useEloRanking }: { clubId: string; useEloRanking?: boolean }) {
+interface MembersTableProps {
+  clubId: string;
+  useEloRanking?: boolean;
+  rankingParams?: RankingParams;
+}
+
+const defaultRankingParams: RankingParams = {
+  skill1: { name: 'Vitesse', enabled: true },
+  skill2: { name: 'Lancer', enabled: true },
+};
+
+export function MembersTable({ clubId, useEloRanking, rankingParams = defaultRankingParams }: MembersTableProps) {
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -33,7 +44,7 @@ export function MembersTable({ clubId, useEloRanking }: { clubId: string; useElo
       .order('full_name', { ascending: true });
 
     if (error) console.error("Erreur:", error);
-    else setMembers((data as any[]) || []);
+    else setMembers((data as Member[]) || []);
     setIsLoading(false);
   }, [clubId]);
 
@@ -62,6 +73,9 @@ export function MembersTable({ clubId, useEloRanking }: { clubId: string; useElo
     if (error) alert("Erreur lors de la suppression");
     else fetchMembers();
   };
+
+  const skill1Name = rankingParams.skill1?.name || 'Vitesse';
+  const skill2Name = rankingParams.skill2?.name || 'Lancer';
 
   return (
     <Card className="xl:col-span-2">
@@ -138,14 +152,14 @@ export function MembersTable({ clubId, useEloRanking }: { clubId: string; useElo
                             <span className="text-red-600 font-semibold">{member.losses ?? 0}D</span>
                         </div>
 
-                        {/* VITESSE */}
-                        <div className="flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-1 rounded border border-yellow-100">
+                        {/* SKILL 1 (ex: Vitesse) */}
+                        <div className="flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-1 rounded border border-yellow-100" title={skill1Name}>
                             <Zap className="h-3.5 w-3.5 fill-yellow-500 text-yellow-600" />
                             <span className="font-bold text-sm">{member.speed}</span>
                         </div>
 
-                        {/* LANCER */}
-                        <div className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100">
+                        {/* SKILL 2 (ex: Lancer) */}
+                        <div className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100" title={skill2Name}>
                             <Target className="h-3.5 w-3.5 text-blue-600" />
                             <span className="font-bold text-sm">{member.throwing}</span>
                         </div>
@@ -167,6 +181,7 @@ export function MembersTable({ clubId, useEloRanking }: { clubId: string; useElo
         onSuccess={fetchMembers}
         onDelete={handleDelete}
         useEloRanking={useEloRanking}
+        rankingParams={rankingParams}
       />
     </Card>
   );
