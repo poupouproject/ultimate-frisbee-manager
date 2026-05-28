@@ -39,7 +39,16 @@ export const authProvider: AuthProvider = {
   check: async () => {
     const {
       data: { user },
+      error,
     } = await supabase.auth.getUser();
+
+    if (error) {
+      return {
+        authenticated: false,
+        error: { name: error.name, message: error.message },
+        redirectTo: "/login",
+      };
+    }
 
     if (user) {
       return { authenticated: true };
@@ -51,7 +60,12 @@ export const authProvider: AuthProvider = {
   getIdentity: async () => {
     const {
       data: { user },
+      error,
     } = await supabase.auth.getUser();
+
+    if (error) {
+      return null;
+    }
 
     if (!user) return null;
 

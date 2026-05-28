@@ -2,6 +2,9 @@
   "name": "react-ultimate-shuffler",
   "version": "1.4.0",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
