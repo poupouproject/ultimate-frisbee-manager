@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { redirect } from "next/navigation";
+import { RefineProvider } from "@/components/refine-provider";
 
 export default async function AuthenticatedLayout({
   children,
@@ -37,5 +38,5 @@ export default async function AuthenticatedLayout({
     redirect("/login");
   }
 
-  return <>{children}</>;
+  return <RefineProvider>{children}</RefineProvider>;
 }
