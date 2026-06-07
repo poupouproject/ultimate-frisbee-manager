@@ -99,6 +99,34 @@ function filterPlayersByGender(players: Player[]): { men: Player[], women: Playe
 }
 
 /**
+ * Merge two sets of team arrays by optimally pairing teams to minimise total
+ * size variance.  Sorts the first set ascending and the second set descending
+ * by current size, then pairs them so that the largest team from set A is
+ * combined with the smallest team from set B, and so on.
+ */
+function mergeTeamsOptimally(teamsA: Player[][], teamsB: Player[][], numTeams: number): Player[][] {
+  const sizesA = teamsA.map(t => t.length);
+  const sizesB = teamsB.map(t => t.length);
+
+  // Indices of teamsA sorted by size ascending
+  const orderA = Array.from({ length: numTeams }, (_, i) => i).sort((i, j) => sizesA[i] - sizesA[j]);
+  // Indices of teamsB sorted by size descending (largest first)
+  const orderB = Array.from({ length: numTeams }, (_, i) => i).sort((i, j) => sizesB[j] - sizesB[i]);
+
+  // Build a remapping for teamsB: slot [orderA[k]] gets teamsB[orderB[k]]
+  const remapB = new Array<number>(numTeams);
+  for (let k = 0; k < numTeams; k++) {
+    remapB[orderA[k]] = orderB[k];
+  }
+
+  const merged: Player[][] = Array.from({ length: numTeams }, () => []);
+  for (let i = 0; i < numTeams; i++) {
+    merged[i] = [...(teamsA[i] || []), ...(teamsB[remapB[i]] || [])];
+  }
+  return merged;
+}
+
+/**
  * Distribute players into teams randomly with balance checking
  */
 export function generateBalancedTeams(
@@ -108,8 +136,8 @@ export function generateBalancedTeams(
   maxAttempts: number = 100,
   rankingMode: RankingMode = 'manual'
 ): Player[][] {
-  if (players.length < numTeams) {
-    return [];
+  if (players.length === 0) {
+    return Array.from({ length: numTeams }, () => []);
   }
 
   // Random mode: just shuffle and split, no balance checking
@@ -172,13 +200,7 @@ export function generateBalancedTeamsMixed(
   const menTeams = generateBalancedTeams(men, numTeams, balanceMode, maxAttempts, rankingMode);
   const womenTeams = generateBalancedTeams(women, numTeams, balanceMode, maxAttempts, rankingMode);
 
-  // Merge teams
-  const teams: Player[][] = Array.from({ length: numTeams }, () => []);
-  for (let i = 0; i < numTeams; i++) {
-    teams[i] = [...(menTeams[i] || []), ...(womenTeams[i] || [])];
-  }
-
-  return teams;
+  return mergeTeamsOptimally(menTeams, womenTeams, numTeams);
 }
 
 /**
@@ -271,11 +293,8 @@ export function generateMultipleMatches(
     } else {
       // For split mode, we combine men and women teams into a single match structure
       const splitResult = generateBalancedTeamsSplit(players, numTeams, balanceMode, maxAttempts, rankingMode);
-      // Merge for storage - the UI will handle displaying separately if needed
-      teams = [];
-      for (let j = 0; j < numTeams; j++) {
-        teams.push([...(splitResult.men[j] || []), ...(splitResult.women[j] || [])]);
-      }
+      // Merge men and women optimally to avoid size imbalance
+      teams = mergeTeamsOptimally(splitResult.men, splitResult.women, numTeams);
     }
 
     matches.push({ teams });
